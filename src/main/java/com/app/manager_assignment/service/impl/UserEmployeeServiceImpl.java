@@ -20,6 +20,7 @@ import com.app.manager_assignment.entity.Employees;
 import com.app.manager_assignment.entity.Manager;
 import com.app.manager_assignment.entity.MangerEmployeeMap;
 import com.app.manager_assignment.entity.UserEmployee;
+import com.app.manager_assignment.exceptionmapping.CommonErrorConstant;
 import com.app.manager_assignment.service.UserEmployeeService;
 
 /**
@@ -40,18 +41,18 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 	public Manager createRegistration(Manager manager) {
 
 		if (Objects.isNull(manager.getEmailId()) || manager.getEmailId().isEmpty())
-			throw new NullPointerException("Please enter your valid  email ID");
+			throw new NullPointerException(CommonErrorConstant.EMAIL_ERROR);
 
 		if (Objects.isNull(manager.getPassword()))
-			throw new NullPointerException("Please enter your password");
+			throw new NullPointerException(CommonErrorConstant.PASSWORD_ERROR);
 
 		UserEmployee userEmployee = userEmployeeDao.findUserEmployeeByEmailId(manager.getEmailId());
 
 		if (Objects.nonNull(userEmployee))
-			throw new IllegalArgumentException("Sorry, the email ID you have entered is already registered.");
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_EXIST);
 
 		if (isValid(manager.getEmailId()) == false)
-			throw new IllegalArgumentException("Invalid email Id ");
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_ERROR);
 
 		Manager create = new Manager();
 		create.setFirstName(manager.getFirstName());
@@ -76,29 +77,45 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 	public Employees createEmployee(EmployeeRequest employeeRequest) {
 
 		if (Objects.isNull(employeeRequest.getEmailId()) || employeeRequest.getEmailId().trim().isEmpty())
-			throw new NullPointerException("Please enter your valid  email ID");
+			throw new NullPointerException(CommonErrorConstant.EMAIL_ERROR);
 
 		if (Objects.isNull(employeeRequest.getMangerId()))
-			throw new NullPointerException("Manager Id not be null");
+			throw new NullPointerException(CommonErrorConstant.MANAGER_NOT_NULL);
 
-		UserEmployee userEmployee = userEmployeeDao.findUserEmployeeByEmailId(employeeRequest.getEmailId());
-		if (Objects.nonNull(userEmployee)) 
-			throw new IllegalArgumentException("employee already exist");
-		
 		if (isValid(employeeRequest.getEmailId()) == false)
-			throw new IllegalArgumentException("Invalid email Id");
-		
-		Employees employeeId = userEmployeeDao.save(getEmployeeForSave(employeeRequest));
-		
-		saveMangerEmployeeMap(employeeId, employeeRequest);
-		return employeeId;
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_INVALID);
+		UserEmployee userEmployee = userEmployeeDao.findByEmailId(employeeRequest.getEmailId());
+		if(employeeRequest.getMangerId().equals(userEmployee.getEmployeeId()))
+		{
+			throw new IllegalArgumentException(CommonErrorConstant.SELF_ASSIGN);		
+		}else {
+			Employees employee = userEmployeeDao.findUserEmployeeByEmailId(employeeRequest.getEmailId());
+			/*	if (Objects.nonNull(userEmployee)) 
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_ALL_EXIST);
+		*/
+		System.out.println("================>"+employee);
+			
+		if (Objects.nonNull(employee)) {
+				saveMangerEmployeeMap(employee, employeeRequest);
+			}else {
+				employee = userEmployeeDao.save(getEmployeeForSave(employeeRequest));
+				saveMangerEmployeeMap(employee, employeeRequest);
+			}
+			
+			
+			return employee;	
+		}
 	}
 
 	private void saveMangerEmployeeMap(Employees employee, EmployeeRequest employeeRequest) {
-		MangerEmployeeMap mangerEmployeeMap = new MangerEmployeeMap();
-		mangerEmployeeMap.setManagerId(employeeRequest.getMangerId());
-		mangerEmployeeMap.setEmployeeId(employee.getEmployeeId());
-		mangerEmployeeMapDao.save(mangerEmployeeMap);
+		MangerEmployeeMap mangerEmployeeMap = mangerEmployeeMapDao.findMangerEmployeeMapByManagerIdAndEmployeeId(employeeRequest.getMangerId(), employee.getEmployeeId());
+		
+		if (Objects.isNull(mangerEmployeeMap)) {
+			mangerEmployeeMap = new MangerEmployeeMap();
+			mangerEmployeeMap.setManagerId(employeeRequest.getMangerId());
+			mangerEmployeeMap.setEmployeeId(employee.getEmployeeId());
+			mangerEmployeeMapDao.save(mangerEmployeeMap);
+		}
 	}
 
 	private Employees getEmployeeForSave(EmployeeRequest employeeRequest) {
@@ -122,7 +139,6 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 			UserEmployee user = userEmployeeDao.findOne(e.getEmployeeId());
 			userEmployee.add(user);
 		}
-		//System.out.println("user Employee" + userEmployee);
 
 		return userEmployee;
 	}
@@ -131,7 +147,7 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 	public void deleteEmployee(Long employeeId) {
 
 		if (Objects.isNull(employeeId))
-			throw new NullPointerException("EmployeeId not be null");
+			throw new NullPointerException(CommonErrorConstant.EMAIL_NOT_NULL);
 
 		userEmployeeDao.delete(employeeId);
 		MangerEmployeeMap map = mangerEmployeeMapDao.findMangerEmployeeMapByEmployeeId(employeeId);
@@ -142,18 +158,14 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 	@Override
 	public Employees updateEmployee(Long employeeId, EmployeeUpdateRequest employeeResquest) {
 		if (Objects.isNull(employeeId))
-			throw new NullPointerException("EmployeeID not be null");
+			throw new NullPointerException(CommonErrorConstant.EMAIL_NOT_NULL);
 
 		Employees updateEmployee = (Employees) userEmployeeDao.findOne(employeeId);
-		updateEmployee.setFirstName(Objects.nonNull(employeeResquest.getFirstName()) ? employeeResquest.getFirstName()
-				: updateEmployee.getFirstName());
-		updateEmployee.setLastName(Objects.nonNull(employeeResquest.getLastName()) ? employeeResquest.getLastName()
-				: updateEmployee.getLastName());
+		updateEmployee.setFirstName(Objects.nonNull(employeeResquest.getFirstName()) ? employeeResquest.getFirstName() : updateEmployee.getFirstName());
+		updateEmployee.setLastName(Objects.nonNull(employeeResquest.getLastName()) ? employeeResquest.getLastName() : updateEmployee.getLastName());
 		updateEmployee.setEmailId(updateEmployee.getEmailId());
-		updateEmployee.setAddress(Objects.nonNull(employeeResquest.getAddress()) ? employeeResquest.getAddress()
-				: updateEmployee.getAddress());
-		updateEmployee.setCity(
-				Objects.nonNull(employeeResquest.getCity()) ? employeeResquest.getCity() : updateEmployee.getCity());
+		updateEmployee.setAddress(Objects.nonNull(employeeResquest.getAddress()) ? employeeResquest.getAddress() : updateEmployee.getAddress());
+		updateEmployee.setCity(Objects.nonNull(employeeResquest.getCity()) ? employeeResquest.getCity() : updateEmployee.getCity());
 		Date dob;
 		try {
 			if (Objects.nonNull(employeeResquest.getDateOfBirth())) {
@@ -175,23 +187,22 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 	@Override
 	public UserEmployee login(LoginRequest loginRequest) {
 
-		if (Objects.isNull(loginRequest) || Objects.isNull(loginRequest.getUserName())
-				|| Objects.isNull(loginRequest.getPassword())) {
+		if (Objects.isNull(loginRequest) || Objects.isNull(loginRequest.getUserName()) || Objects.isNull(loginRequest.getPassword())) {
 			return null;
 		}
 
 		if (isValid(loginRequest.getUserName()) == false)
-			throw new IllegalArgumentException("Invalid email Id ");
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_INVALID);
 
 		Manager user = userEmployeeDao.findByEmailId(loginRequest.getUserName());
 
 		String userCurrentPassword = new String(Base64.getDecoder().decode(user.getPassword()));
 
 		if (Objects.isNull(user)) {
-			throw new IllegalArgumentException("Wrong Login Credentials");
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_WRONG);
 		}
 		if (!userCurrentPassword.equals(loginRequest.getPassword())) {
-			throw new IllegalArgumentException("Wrong Password");
+			throw new IllegalArgumentException(CommonErrorConstant.WRONG_PASSWORD);
 		}
 
 		return user;

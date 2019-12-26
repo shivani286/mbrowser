@@ -19,5 +19,5 @@ public interface MangerEmployeeMapDao extends JpaRepository<MangerEmployeeMap, L
 	List<MangerEmployeeMap> findMangerEmployeeMapByManagerId(Long managerId);
 
 	MangerEmployeeMap findMangerEmployeeMapByEmployeeId(Long employeeId);
-
+	MangerEmployeeMap findMangerEmployeeMapByManagerIdAndEmployeeId(Long managerId, Long employeeId);
 }

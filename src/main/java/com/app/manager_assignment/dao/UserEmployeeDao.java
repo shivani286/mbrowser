@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import com.app.manager_assignment.entity.Employees;
 import com.app.manager_assignment.entity.Manager;
 import com.app.manager_assignment.entity.UserEmployee;
 /**
@@ -14,7 +15,7 @@ import com.app.manager_assignment.entity.UserEmployee;
 @Repository
 public interface UserEmployeeDao  extends JpaRepository<UserEmployee, Long>{
 
-	UserEmployee findUserEmployeeByEmailId(String emailId);
+	Employees findUserEmployeeByEmailId(String emailId);
 
 	Manager findByEmailId(String userName);
 	

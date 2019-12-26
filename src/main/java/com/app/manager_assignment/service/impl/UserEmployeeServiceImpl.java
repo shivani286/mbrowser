@@ -84,16 +84,19 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 
 		if (isValid(employeeRequest.getEmailId()) == false)
 			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_INVALID);
+		
 		UserEmployee userEmployee = userEmployeeDao.findByEmailId(employeeRequest.getEmailId());
-		if(employeeRequest.getMangerId().equals(userEmployee.getEmployeeId()))
-		{
-			throw new IllegalArgumentException(CommonErrorConstant.SELF_ASSIGN);		
+		System.out.println("================>"+userEmployee);
+		
+		if (Objects.nonNull(userEmployee)) {
+			if (employeeRequest.getMangerId().equals(userEmployee.getEmployeeId())) {
+				throw new IllegalArgumentException(CommonErrorConstant.SELF_ASSIGN);
+			}
 		}else {
 			Employees employee = userEmployeeDao.findUserEmployeeByEmailId(employeeRequest.getEmailId());
 			/*	if (Objects.nonNull(userEmployee)) 
 			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_ALL_EXIST);
 		*/
-		System.out.println("================>"+employee);
 			
 		if (Objects.nonNull(employee)) {
 				saveMangerEmployeeMap(employee, employeeRequest);
@@ -105,6 +108,7 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 			
 			return employee;	
 		}
+		return null;
 	}
 
 	private void saveMangerEmployeeMap(Employees employee, EmployeeRequest employeeRequest) {
@@ -115,7 +119,8 @@ public class UserEmployeeServiceImpl implements UserEmployeeService {
 			mangerEmployeeMap.setManagerId(employeeRequest.getMangerId());
 			mangerEmployeeMap.setEmployeeId(employee.getEmployeeId());
 			mangerEmployeeMapDao.save(mangerEmployeeMap);
-		}
+		}else
+			throw new IllegalArgumentException(CommonErrorConstant.EMAIL_ALL_EXIST);
 	}
 
 	private Employees getEmployeeForSave(EmployeeRequest employeeRequest) {
